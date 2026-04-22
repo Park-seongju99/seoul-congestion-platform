@@ -1,0 +1,39 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: congestion-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - congestion-net
+
+  api:
+    build: ./platform-api
+    container_name: congestion-api
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SEOUL_API_KEY: ${SEOUL_API_KEY}
+      BUS_API_KEY: ${BUS_API_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - congestion-net
+
+volumes:
+  mysql-data:
+
+networks:
+  congestion-net:
