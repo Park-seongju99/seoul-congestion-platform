@@ -16,7 +16,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CongestionScheduler {
+public class PlaceScheduler {
 
     private final PlaceCongestionRepository placeCongestionRepository;
     private final RestTemplate restTemplate;
