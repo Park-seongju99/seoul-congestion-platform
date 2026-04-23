@@ -1,7 +1,9 @@
 package com.seoul.congestion.scheduler;
 
 import com.seoul.congestion.domain.PlaceCongestion;
+import com.seoul.congestion.dto.CongestionMessage;
 import com.seoul.congestion.repository.PlaceCongestionRepository;
+import com.seoul.congestion.service.CongestionWebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,7 @@ public class PlaceScheduler {
 
     private final PlaceCongestionRepository placeCongestionRepository;
     private final RestTemplate restTemplate;
+    private final CongestionWebSocketService webSocketService;
 
     @Value("${seoul.api.key}")
     private String apiKey;
@@ -39,7 +42,6 @@ public class PlaceScheduler {
         for (String placeId : PLACE_IDS) {
             try {
                 String url = apiUrl + "/" + apiKey + "/json/citydata/1/1/" + placeId;
-
                 Map response = restTemplate.getForObject(url, Map.class);
 
                 if (response != null) {
@@ -48,15 +50,19 @@ public class PlaceScheduler {
                         List<Map> ppltnList = (List<Map>) citydata.get("LIVE_PPLTN_STTS");
                         if (ppltnList != null && !ppltnList.isEmpty()) {
                             String level = (String) ppltnList.get(0).get("AREA_CONGEST_LVL");
+                            LocalDateTime now = LocalDateTime.now();
 
                             PlaceCongestion congestion = PlaceCongestion.builder()
                                 .placeId(placeId)
                                 .congestionLevel(level)
-                                .collectedAt(LocalDateTime.now())
+                                .collectedAt(now)
                                 .build();
 
                             placeCongestionRepository.save(congestion);
                             log.info("저장 완료 - 장소: {}, 혼잡도: {}", placeId, level);
+
+                            // WebSocket 실시간 푸시
+                            webSocketService.broadcast(new CongestionMessage(placeId, level, now));
                         }
                     }
                 }
